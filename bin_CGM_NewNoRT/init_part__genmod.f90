@@ -1,0 +1,8 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:14:09 2016
+        MODULE INIT_PART__genmod
+          INTERFACE 
+            SUBROUTINE INIT_PART
+              USE AMR_COMMONS
+            END SUBROUTINE INIT_PART
+          END INTERFACE 
+        END MODULE INIT_PART__genmod

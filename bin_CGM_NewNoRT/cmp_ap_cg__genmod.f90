@@ -1,0 +1,8 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:14:31 2016
+        MODULE CMP_AP_CG__genmod
+          INTERFACE 
+            SUBROUTINE CMP_AP_CG(ILEVEL)
+              INTEGER(KIND=4) :: ILEVEL
+            END SUBROUTINE CMP_AP_CG
+          END INTERFACE 
+        END MODULE CMP_AP_CG__genmod

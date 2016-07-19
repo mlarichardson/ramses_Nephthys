@@ -1,0 +1,12 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:14:22 2016
+        MODULE GETSNONMYID__genmod
+          INTERFACE 
+            SUBROUTINE GETSNONMYID(ISN_MYID,NSN_MYID,XSN,NSN)
+              USE AMR_COMMONS
+              INTEGER(KIND=4) :: NSN
+              INTEGER(KIND=4) :: ISN_MYID(1:NSN)
+              INTEGER(KIND=4) :: NSN_MYID
+              REAL(KIND=8) :: XSN(1:NSN,1:3)
+            END SUBROUTINE GETSNONMYID
+          END INTERFACE 
+        END MODULE GETSNONMYID__genmod

@@ -1,0 +1,12 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:14:17 2016
+        MODULE NEWTON_RAPHSON_SAFE__genmod
+          INTERFACE 
+            SUBROUTINE NEWTON_RAPHSON_SAFE(X1,X2,YWANT,XEPS,RTSAFE)
+              REAL(KIND=8) :: X1
+              REAL(KIND=8) :: X2
+              REAL(KIND=8) :: YWANT
+              REAL(KIND=8) :: XEPS
+              REAL(KIND=8) :: RTSAFE
+            END SUBROUTINE NEWTON_RAPHSON_SAFE
+          END INTERFACE 
+        END MODULE NEWTON_RAPHSON_SAFE__genmod

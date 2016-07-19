@@ -1,0 +1,11 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:14:17 2016
+        MODULE MAXWELLIANCDF__genmod
+          INTERFACE 
+            SUBROUTINE MAXWELLIANCDF(X,YWANT,FN,DF)
+              REAL(KIND=8) :: X
+              REAL(KIND=8) :: YWANT
+              REAL(KIND=8) :: FN
+              REAL(KIND=8) :: DF
+            END SUBROUTINE MAXWELLIANCDF
+          END INTERFACE 
+        END MODULE MAXWELLIANCDF__genmod

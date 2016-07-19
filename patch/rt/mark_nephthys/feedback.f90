@@ -1114,7 +1114,7 @@ subroutine getSNonmyid(iSN_myid,nSN_myid,xSN,nSN)
   real(dp),dimension(1:3)::skip_loc
   real(dp)::xxmin,yymin,zzmin,xxmax,yymax,zzmax,dmax
   real(qdp),dimension(1:8)::bounding_min,bounding_max
-  real(qdp)::dkey,order_min,oneqdp=1.0
+  real(qdp)::dkey,order_min(1),oneqdp=1.0
   real(dp),dimension(1:nSN,1:3)::xSN
   real(dp)::rcell
   rcell=2.0d0 !Leo: bubble radius
@@ -1191,8 +1191,8 @@ subroutine getSNonmyid(iSN_myid,nSN_myid,xSN,nSN)
            else
               order_min=0.0d0
            endif
-           bounding_min(i)=(order_min)*dkey
-           bounding_max(i)=(order_min+oneqdp)*dkey
+           bounding_min(i)=(order_min(1))*dkey
+           bounding_max(i)=(order_min(1)+oneqdp)*dkey
         end do
         
         cpu_min=0; cpu_max=0

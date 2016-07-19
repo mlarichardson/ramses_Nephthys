@@ -199,7 +199,7 @@ subroutine write_screen
 #endif
      ! Sort radius
      allocate(ind_sort(1:ncell))
-     call quick_sort(rr,ind_sort,ncell)
+     call quick_sort_dp(rr,ind_sort,ncell)
      ! Write results to screen
      smallp=smallc**2/gamma
      nx_loc=icoarse_max-icoarse_min+1

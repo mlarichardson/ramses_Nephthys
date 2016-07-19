@@ -1,0 +1,15 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:14:20 2016
+        MODULE COUNT_CLOUDS_NP__genmod
+          INTERFACE 
+            SUBROUTINE COUNT_CLOUDS_NP(IND_GRID,IND_PART,IND_GRID_PART, &
+     &NG,NP,ACTION,ILEVEL)
+              INTEGER(KIND=4) :: IND_GRID(1:32)
+              INTEGER(KIND=4) :: IND_PART(1:32)
+              INTEGER(KIND=4) :: IND_GRID_PART(1:32)
+              INTEGER(KIND=4) :: NG
+              INTEGER(KIND=4) :: NP
+              CHARACTER(LEN=15) :: ACTION
+              INTEGER(KIND=4) :: ILEVEL
+            END SUBROUTINE COUNT_CLOUDS_NP
+          END INTERFACE 
+        END MODULE COUNT_CLOUDS_NP__genmod

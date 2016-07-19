@@ -331,6 +331,7 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
   !-----------------------------------------------------------------------
   ! This routine is called by subroutine mechanical_feedback_fine 
   !-----------------------------------------------------------------------
+  integer,dimension(nvector)::icellvec
   integer::i,j,nwco,nwco_here,idim,icell,igrid,ista,iend,ilevel2
   integer::ind_cell,ncell,irad,ii,ich
   real(dp)::d,u,v,w,e,z,eth,ekk,Tk,d0,u0,v0,w0,dteff
@@ -436,7 +437,8 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
         ! find the mach number of this cell
         vth   = sqrt(gamma*1.38d-16*Tk/1.673d-24) ! cm/s
         ncell = 1
-        call getnbor(icell,ind_nbor,ncell,ilevel)
+        icellvec(1) = icell
+        call getnbor(icellvec,ind_nbor,ncell,ilevel)
         u0 = uold(icell        ,2) 
         v0 = uold(icell        ,3) 
         w0 = uold(icell        ,4) 

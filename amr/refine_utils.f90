@@ -549,8 +549,8 @@ subroutine refine_fine(ilevel)
   numbtot(4,ilevel+1)=numbtot(1,ilevel+1)/ncpu
 
 111 format('   Entering refine_fine for level ',I2)
-112 format('   ==> Make ',i6,' sub-grids')
-113 format('   ==> Kill ',i6,' sub-grids')
+112 format('   ==> Make ',i8,' sub-grids')
+113 format('   ==> Kill ',i8,' sub-grids')
 
 end subroutine refine_fine
 !###############################################################

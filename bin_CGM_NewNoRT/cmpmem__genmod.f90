@@ -1,0 +1,8 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:13:51 2016
+        MODULE CMPMEM__genmod
+          INTERFACE 
+            SUBROUTINE CMPMEM(OUTMEM)
+              REAL(KIND=4) :: OUTMEM
+            END SUBROUTINE CMPMEM
+          END INTERFACE 
+        END MODULE CMPMEM__genmod

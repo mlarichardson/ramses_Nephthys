@@ -1,0 +1,11 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:14:07 2016
+        MODULE RIEMANN_LLF__genmod
+          INTERFACE 
+            SUBROUTINE RIEMANN_LLF(QLEFT,QRIGHT,FGDNV,NGRID)
+              REAL(KIND=8) :: QLEFT(1:32,1:15)
+              REAL(KIND=8) :: QRIGHT(1:32,1:15)
+              REAL(KIND=8) :: FGDNV(1:32,1:16)
+              INTEGER(KIND=4) :: NGRID
+            END SUBROUTINE RIEMANN_LLF
+          END INTERFACE 
+        END MODULE RIEMANN_LLF__genmod
