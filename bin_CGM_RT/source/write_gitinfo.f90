@@ -1,1 +1,0 @@
-../../amr/write_gitinfo.f90

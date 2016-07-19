@@ -1,8 +1,0 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:13:51 2016
-        MODULE GETMEM__genmod
-          INTERFACE 
-            SUBROUTINE GETMEM(OUTMEM)
-              REAL(KIND=4) :: OUTMEM
-            END SUBROUTINE GETMEM
-          END INTERFACE 
-        END MODULE GETMEM__genmod
