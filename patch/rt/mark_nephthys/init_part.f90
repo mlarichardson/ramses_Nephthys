@@ -181,15 +181,15 @@ subroutine init_part
            read(ilun)xdp
            zp(1:npart2)=xdp
         end if
+        if(use_initial_mass)then
+           read(ilun)xdp
+           mp0(1:npart2)=xdp
+        endif
         do ich=1,nchem
            ! Read chemical abundance
            read(ilun)xdp
            chp(1:npart2,ich)=xdp
         end do
-        if(use_initial_mass)then
-           read(ilun)xdp
-           mp0(1:npart2)=xdp
-        endif
         deallocate(xdp)
      end if
      close(ilun)

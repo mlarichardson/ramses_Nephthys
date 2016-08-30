@@ -504,9 +504,9 @@ subroutine cmp_stellar_wind_props (birth_time,dteff, zstar,dfmloss, log_deloss_e
    call getStarAgeGyr(birth_time+dteff, age1)
    call getStarAgeGyr(birth_time      , age2) ! double-checked.
 
-   log_age1    = log10(age1*1d9)
-   log_age2    = log10(age2*1d9)
-   log_met     = log10(zstar)
+   log_age1    = log10(max(age1*1d9,1.d0))
+   log_age2    = log10(max(age2*1d9,1.d0))
+   log_met     = log10(max(zstar,z_ave))
 
    ! search for the time index from stellar winds library
    call binary_search(log_tSW, log_age1, nt_SW, itg1)

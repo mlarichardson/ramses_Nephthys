@@ -402,6 +402,10 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
         print *, cpu_map(father(igrid)),myid
         print *, ilevel, ilevel2
         print *, ind_cell, icell
+        print *, i, np, ncoarse, ind_grid(i), ind_pos_cell(i), ngridmax
+        print *, xc2(1:3,i)
+        print *, xg(ind_grid(i),1:3)
+        print *, xc(ind_pos_cell(i),1:3)
         stop 
      endif
  

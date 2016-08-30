@@ -5,31 +5,30 @@
 NVECTOR = 32
 NDIM = 3
 NPRE = 8
-NVAR = 6 # rho, u, v, w, P, RefMap
+NVAR = 15 # rho, u, v, w, P, (IR_P), Z, (H, C, N, O, Mg, Si, S, Fe, RefMap
 NENER = 0
 NGROUPS = 0
 NIONS = 0
+NCHEM = 8
 SOLVER = hydro
-PATCH = ../../src/patch/hydro/mark/
+PATCH = ../../src/patch/rt/mark_nephthys
 EXEC = ramses
 ATON_FLAGS = #-DATON # Uncomment to enable ATON
-NION_FLAGS = #-DNIONS=$(NIONS)
-RT_FLAGS = #-DRT
+RT_FLAGS = #-DRT -DNIONS=$(NIONS) -DNGROUPS=$(NGROUPS)
 #############################################################################
 GITBRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 GITHASH = $(shell git log --pretty=format:'%H' -n 1)
 GITREPO = $(shell git config --get remote.origin.url)
 BUILDDATE = $(shell date +"%D-%T")
-DEFINES = -DNVECTOR=$(NVECTOR) -DNDIM=$(NDIM) -DNPRE=$(NPRE) -DNENER=$(NENER) -DNVAR=$(NVAR) \
-          -DSOLVER$(SOLVER) -DQUADHILBERT $(NION_FLAGS) $(RT_FLAGS) -DNGROUPS=$(NGROUPS) $(ATON_FLAGS) -DNOSYSTEM
+DEFINES = -DNVECTOR=$(NVECTOR) -DNDIM=$(NDIM) -DNPRE=$(NPRE) $(RT_FLAGS) -DNENER=$(NENER) -DNVAR=$(NVAR) \
+          -DSOLVER$(SOLVER) -DQUADHILBERT $(ATON_FLAGS) -DNOSYSTEM -DNCHEM=$(NCHEM)
 #############################################################################
 # Fortran compiler options and directives
 
 # Added by Jon Wakelin (for Dirac Leicester)
 F90    = mpiifort
-FOPT   =  -O3
-#FOPT   =  -g -check all -xAVX -ipo -static_mpi -static-intel
-#-g -check all -fpe0 -warn -traceback -debug extended
+#FOPT   =  -O3
+FOPT   =  -g -check all -xAVX -ipo -static_mpi -static-intel -check all -fpe0 -warn -traceback -debug extended
 FFLAGS = -cpp $(FOPT) $(DEFINES) 
 
 # --- No MPI, gfortran -------------------------------
@@ -101,28 +100,36 @@ LIBS = $(LIBMPI)
 VPATH = $(PATCH):../../src/$(SOLVER):../../src/aton:../../src/rt:../../src/hydro:../../src/pm:../../src/poisson:../../src/amr
 #############################################################################
 # All objects
-MODOBJ = amr_parameters.o amr_commons.o random.o pm_parameters.o pm_commons.o poisson_parameters.o poisson_commons.o hydro_parameters.o hydro_commons.o cooling_module.o bisection.o sparse_mat.o clfind_commons.o gadgetreadfile.o mechanical_commons.o write_gitinfo.o rt_parameters.o rt_hydro_commons.o coolrates_module.o rt_spectra.o rt_cooling_module.o rt_flux_module.o write_makefile.o write_patch.o 
+MODOBJ = amr_parameters.o amr_commons.o random.o pm_parameters.o pm_commons.o poisson_parameters.o poisson_commons.o hydro_parameters.o hydro_commons.o cooling_module.o bisection.o sparse_mat.o clfind_commons.o gadgetreadfile.o mechanical_commons.o write_gitinfo.o # write_makefile.o write_patch.o
+
+ifneq (,$(findstring DRT,$(DEFINES)))
+MODOBJ := $(MODOBJ) rt_parameters.o rt_hydro_commons.o coolrates_module.o rt_spectra.o rt_cooling_module.o rt_flux_module.o 
+endif
 
 AMROBJ = read_params.o init_amr.o init_time.o init_refine.o adaptive_loop.o amr_step.o update_time.o output_amr.o flag_utils.o physical_boundaries.o virtual_boundaries.o refine_utils.o nbors_utils.o hilbert.o load_balance.o title.o sort.o cooling_fine.o units.o light_cone.o movie.o
 
 # Particle-Mesh objects
-PMOBJ = init_part.o output_part.o rho_fine.o synchro_fine.o move_fine.o newdt_fine.o particle_tree.o add_list.o remove_list.o star_formation.o sink_particle.o feedback.o clump_finder.o clump_merger.o mechanical_fine.o flag_formation_sites.o init_sink.o output_sink.o
+PMOBJ = init_part.o output_part.o rho_fine.o synchro_fine.o move_fine.o newdt_fine.o particle_tree.o add_list.o remove_list.o star_formation.o sink_particle.o feedback.o clump_finder.o clump_merger.o init_sink.o output_sink.o flag_formation_sites.o stellar_winds_fine.o mechanical_fine.o mechanical_fine_snIa.o 
 
 # Poisson solver objects
 POISSONOBJ = init_poisson.o phi_fine_cg.o interpol_phi.o force_fine.o multigrid_coarse.o multigrid_fine_commons.o multigrid_fine_fine.o multigrid_fine_coarse.o gravana.o boundary_potential.o rho_ana.o output_poisson.o
 
 # Hydro objects
-HYDROOBJ = init_hydro.o init_flow_fine.o write_screen.o output_hydro.o courant_fine.o godunov_fine.o uplmde.o umuscl.o interpol_hydro.o godunov_utils.o condinit.o hydro_flag.o hydro_boundary.o boundana.o read_hydro_params.o synchro_hydro_fine.o
+HYDROOBJ = init_hydro.o init_flow_fine.o write_screen.o output_hydro.o courant_fine.o godunov_fine.o uplmde.o umuscl.o interpol_hydro.o godunov_utils.o condinit.o hydro_flag.o hydro_boundary.o boundana.o read_hydro_params.o synchro_hydro_fine.o #debug_utils.o
 
 # RT objects
 RTOBJ = rt_init_hydro.o rt_init_xion.o rt_init.o rt_init_flow_fine.o rt_output_hydro.o rt_godunov_fine.o rt_interpol_hydro.o rt_godunov_utils.o rt_condinit.o rt_hydro_flag.o rt_hydro_boundary.o rt_boundana.o rt_read_hydro_params.o rt_units.o
 
 # All objects
+ifneq (,$(findstring DRT,$(DEFINES)))
 AMRLIB = $(AMROBJ) $(HYDROOBJ) $(PMOBJ) $(POISSONOBJ) $(RTOBJ)
+else
+AMRLIB = $(AMROBJ) $(HYDROOBJ) $(PMOBJ) $(POISSONOBJ)
+endif
 
 # ATON objects
 ATON_MODOBJ = timing.o radiation_commons.o rad_step.o
-ATON_OBJ = observe.o init_radiation.o rad_init.o rad_boundary.o rad_stars.o rad_backup.o ../aton/atonlib/libaton.a
+ATON_OBJ = observe.o init_radiation.o rad_init.o rad_boundary.o rad_stars.o rad_backup.o ../../src/aton/atonlib/libaton.a
 #############################################################################
 ramses:	$(MODOBJ) $(AMRLIB) ramses.o
 	$(F90) $(MODOBJ) $(AMRLIB) ramses.o -o $(EXEC)$(NDIM)d $(LIBS)
