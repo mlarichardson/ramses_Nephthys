@@ -1,7 +1,0 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:13:48 2016
-        MODULE INIT_AMR__genmod
-          INTERFACE 
-            SUBROUTINE INIT_AMR
-            END SUBROUTINE INIT_AMR
-          END INTERFACE 
-        END MODULE INIT_AMR__genmod

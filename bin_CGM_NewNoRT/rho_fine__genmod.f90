@@ -1,9 +1,0 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:14:11 2016
-        MODULE RHO_FINE__genmod
-          INTERFACE 
-            SUBROUTINE RHO_FINE(ILEVEL,ICOUNT)
-              INTEGER(KIND=4) :: ILEVEL
-              INTEGER(KIND=4) :: ICOUNT
-            END SUBROUTINE RHO_FINE
-          END INTERFACE 
-        END MODULE RHO_FINE__genmod

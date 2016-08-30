@@ -1,9 +1,0 @@
-        !COMPILER-GENERATED INTERFACE MODULE: Tue Jul 19 00:14:19 2016
-        MODULE UPD_CLOUD__genmod
-          INTERFACE 
-            SUBROUTINE UPD_CLOUD(IND_PART,NP)
-              INTEGER(KIND=4) :: IND_PART(1:32)
-              INTEGER(KIND=4) :: NP
-            END SUBROUTINE UPD_CLOUD
-          END INTERFACE 
-        END MODULE UPD_CLOUD__genmod
