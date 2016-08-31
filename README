@@ -49,7 +49,7 @@ This will:
   cd into builds/
   mkdir bin_NEWBUILD
   cd bin_NEWBUILD
-  cp ../../Makes/NEW_MAKEFILE ./Make
+  cp ../../Makes/NEW_MAKEFILE ./Makefile
   mkdir source/
   cd source
   ln -s {ALL SOURCE FILES FOR THIS BUILD}
