@@ -506,7 +506,7 @@ subroutine cmp_stellar_wind_props (birth_time,dteff, zstar,dfmloss, log_deloss_e
 
    log_age1    = log10(max(age1*1d9,1.d0))
    log_age2    = log10(max(age2*1d9,1.d0))
-   log_met     = log10(max(zstar,z_ave))
+   log_met     = log10(max(zstar,z_ave*0.2))
 
    ! search for the time index from stellar winds library
    call binary_search(log_tSW, log_age1, nt_SW, itg1)
