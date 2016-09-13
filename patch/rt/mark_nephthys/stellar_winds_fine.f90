@@ -187,9 +187,9 @@ subroutine stellar_winds_fine(ilevel)
 
   if(numbtot(1,ilevel)==0)return
   if(verbose)write(*,111)ilevel
-  ! Gather star particles only.
+  if(ndim.ne.3) return
 
-#if NDIM==3
+  ! Gather star particles only.
   ! Loop over cpus
   do icpu=1,ncpu
      igrid=headl(icpu,ilevel)
@@ -249,8 +249,6 @@ subroutine stellar_winds_fine(ilevel)
   end do 
   ! End loop over cpus
 
-#endif
-
 111 format('   Entering stlelar winds for level ',I2)
 
 end subroutine stellar_winds_fine
@@ -271,7 +269,7 @@ subroutine stellar_winds_dump(ind_grid,ind_part,ind_grid_part,ng,np,ilevel)
   ! dumps mass, momentum and energy in the nearest grid cell using array
   ! unew.
   !-----------------------------------------------------------------------
-  integer::i,j,idim,nx_loc, ich
+  integer::i,j,idim,nx_loc,ich,ivar
   real(dp)::dx_min,vol_min
   real(dp)::dx,dx_loc,scale,birth_time
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
@@ -295,6 +293,12 @@ subroutine stellar_winds_dump(ind_grid,ind_part,ind_grid_part,ng,np,ilevel)
   real(dp)::unit_e_code
   real(dp)::dfmloss_spec(1:nchem)
   real(dp),dimension(1:nchem,1:nvector)::mloss_spec
+  ! fractional abundances ; for ionisation fraction and ref, etc
+  real(dp),dimension(1:nvector,1:NVAR),save::fractions
+  integer::i_fractions
+
+  ! starting index for passive variables except for imetal and chem
+  i_fractions = imetal+nchem+1
 
   ! Conversion factor from user units to cgs units
   call units(scale_l,scale_t,scale_d,scale_v,scale_nH,scale_T2)
@@ -312,7 +316,6 @@ subroutine stellar_winds_dump(ind_grid,ind_part,ind_grid_part,ng,np,ilevel)
   dx_min=(0.5D0**nlevelmax)*scale
   vol_min=dx_min**ndim
 
-#if NDIM==3
   ! Lower left corner of 3x3x3 grid-cube
   do idim=1,ndim
      do i=1,ng
@@ -412,6 +415,13 @@ subroutine stellar_winds_dump(ind_grid,ind_part,ind_grid_part,ng,np,ilevel)
      mloss_spec(:,j)=0d0
   end do
 
+  ! Store the fractional quantites that we don't want to change
+  do ivar=i_fractions,nvar 
+     do j=1,np
+        fractions(j,ivar) = unew(indp(j),ivar)/unew(indp(j),1)
+     end do
+  end do
+
   ! Compute stellar mass loss and thermal feedback due to stellar winds
   do j=1,np
 
@@ -455,8 +465,7 @@ subroutine stellar_winds_dump(ind_grid,ind_part,ind_grid_part,ng,np,ilevel)
      unew(indp(j),2)=unew(indp(j),2)+mloss(j)*vp(ind_part(j),1)
      unew(indp(j),3)=unew(indp(j),3)+mloss(j)*vp(ind_part(j),2)
      unew(indp(j),4)=unew(indp(j),4)+mloss(j)*vp(ind_part(j),3)
-     unew(indp(j),5)=unew(indp(j),5)+mloss(j)*ekinetic(j)+ ethermal(j)
-      
+     unew(indp(j),5)=unew(indp(j),5)+mloss(j)*ekinetic(j)+ ethermal(j)  
   end do
 
   ! Add metals
@@ -475,9 +484,13 @@ subroutine stellar_winds_dump(ind_grid,ind_part,ind_grid_part,ng,np,ilevel)
      end do
   endif
 
+  ! Update the rest of the passive scales so that the fractional quantities are not changed
+  do j=1,np
+     do ivar=i_fractions,nvar 
+        unew(indp(j),ivar) = fractions(j,ivar) * unew(indp(j),1)
+     end do
+  end do
  
-#endif
-  
 end subroutine stellar_winds_dump
 !################################################################
 !################################################################
@@ -507,7 +520,7 @@ subroutine cmp_stellar_wind_props (birth_time,dteff, zstar,dfmloss, log_deloss_e
    log_age1    = log10(max(age1*1d9,1.d0))
    log_age2    = log10(max(age2*1d9,1.d0))
    log_met     = log10(max(zstar,z_ave*0.02d0))
-
+  
    ! search for the time index from stellar winds library
    call binary_search(log_tSW, log_age1, nt_SW, itg1)
    call binary_search(log_tSW, log_age2, nt_SW, itg2)

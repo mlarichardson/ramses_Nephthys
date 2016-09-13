@@ -482,9 +482,10 @@ subroutine output_header(filename)
 #endif
   character(LEN=80)::filename
 
-  integer::info,ilun
+  integer::info,ilun,ich
   integer(i8b)::tmp_long,npart_tot
   character(LEN=80)::fileloc
+  character(LEN=6)::spec
 
   if(verbose)write(*,*)'Entering output_header'
 
@@ -529,6 +530,10 @@ subroutine output_header(filename)
         write(ilun,'(a)',advance='no')'tform '
         if(metal) then
            write(ilun,'(a)',advance='no')'metal '
+        do ich=1,nchem
+           write(spec,'(a4,i2.2)') 'spec', ich
+           write(ilun,'(a,a)',advance='no') spec, ' '
+        enddo
         endif
      endif
      close(ilun)

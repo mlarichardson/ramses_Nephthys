@@ -166,31 +166,6 @@ recursive subroutine amr_step(ilevel,icount)
      
   endif
 
-  ! Mechanical feedback from stars
-  if(hydro.and.star.and.eta_sn>0.and.mechanical_feedback) then
-
-      call mechanical_feedback_fine(ilevel,icount)
-      if (snIa) call mechanical_feedback_snIa_fine(ilevel,icount)
-
-      if(.not.poisson)then
-#ifdef SOLVERmhd
-        do ivar=1,nvar+3
-#else
-        do ivar=1,nvar
-#endif
-
-           call make_virtual_fine_dp(uold(1,ivar),ilevel)
-#ifdef SOLVERmhd
-        end do
-#else
-        end do
-#endif
-     end if
-
-  endif
-
-
-
 
   !--------------------
   ! Poisson source term
@@ -236,6 +211,13 @@ recursive subroutine amr_step(ilevel,icount)
 
      ! Compute gravitational acceleration
      call force_fine(ilevel,icount)
+
+     ! Mechanical feedback from stars
+     if(hydro.and.star.and.eta_sn>0.and.mechanical_feedback) then
+
+        call mechanical_feedback_fine(ilevel,icount)
+        if (snIa) call mechanical_feedback_snIa_fine(ilevel,icount)
+     endif
 
      ! Synchronize remaining particles for gravity
      if(pic)then
