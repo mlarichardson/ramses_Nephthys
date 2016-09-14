@@ -3,7 +3,7 @@
 VER=
 
 if [[ $# -lt 4 ]] ; then
-  echo "Usage: buildRamses -M MAKEFILE_NAME -O BUILD_DIR [-V]"
+  echo "Usage: buildRamses -M MAKEFILE_NAME -O BUILD_DIR [-V] [-RT]"
   exit
 fi
 
@@ -14,6 +14,17 @@ fi
 if [[ $# -eq 5 ]] && [[ $5 == "-v" || $5 == "-V" ]] ; then
     VER=true
 fi
+
+RT=0
+if [[ $# -eq 5 ]] && [[ $5 == "-RT" ]] ; then
+  RT=1
+  echo "Including RT files"
+fi
+if [[ $# -eq 6 ]] && [[ $6 == "-RT" ]] ; then
+  RT=1
+  echo "Including RT files"
+fi
+
 
 # Makefile
 if [[ $1 == "-M" || $1 == "-m" ]] ; then
@@ -126,6 +137,12 @@ if [[ $VER ]]; then
   echo
 fi
 
+if [[ $RT -eq 1 ]] ; then
+  MODOBJ2=`grep MODOBJ $MFILE | head -2 | tail -1 | sed 's/^.*) rt/rt/' | sed 's/\.o/.f90/g'`
+  MODOBJ=`echo $MODOBJ $MODOBJ2`
+  RTOBJ=`grep RTOBJ $MFILE | head -1 | sed 's/^.*= *//' | sed 's/\.o/.f90/g'`
+fi
+
 PMOBJ=`grep  PMOBJ $MFILE | head -1 | sed 's/^.*= *//' | sed 's/\.o/.f90/g'`
 if [[ $VER ]]; then
   echo "Using PMOBJ = $PMOBJ"
@@ -234,6 +251,23 @@ for FILE in $HYDROOBJ; do
     echo "Did not find HYDRO file $FILE"
   fi
 done
+
+if [[ $RT -eq 1 ]] ; then
+  for FILE in $RTOBJ; do
+    for DIR in $VPATH; do
+      if [[ -e $DIR/$FILE ]] ; then
+        cd source
+        ln -s ../$DIR/$FILE ./
+        cd ../
+        break
+      fi
+    done
+  
+    if [[ ! -e source/$FILE ]] ; then
+      echo "Did not find RT file $FILE"
+    fi
+  done
+fi
 
 cp $MFILE ./Makefile
 make
