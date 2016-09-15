@@ -88,14 +88,18 @@ if [[ ! -e $MFILE ]] ; then
   if [[ -e ../$MFILE ]] ; then
     MFILE="../$MFILE"
   else
-    if [[ -e ../Makes/$MFILE ]] ; then
-      MFILE="../Makes/$MFILE"
+    if [[ -e ../Makes/$HOSTNAME/$MFILE ]] ; then
+      MFILE="../Makes/$HOSTNAME/$MFILE"
     else
-      if [[ -e ../../Makes/$MFILE ]] ; then
-        MFILE="../../Makes/$MFILE"
+      if [[ -e ../../Makes/$HOSTNAME/$MFILE ]] ; then
+        MFILE="../../Makes/$HOSTNAME/$MFILE"
       else
-        echo "I can't find the makefile."
-        exit
+        if [[ -e ../../Makes/$MFILE ]] ; then
+          MFILE="../../Makes/$MFILE"
+        else
+          echo "I can't find the makefile."
+          exit
+        fi
       fi
     fi
   fi
