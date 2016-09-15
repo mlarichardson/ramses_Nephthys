@@ -236,6 +236,10 @@ subroutine mechanical_feedback_snIa_fine(ilevel,icount)
   endif
 #endif
 
+#ifdef RT
+   deallocate(L_star)
+#endif
+
 end subroutine mechanical_feedback_snIa_fine
 !################################################################
 !################################################################
@@ -283,7 +287,7 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
   ! For stars affecting across the boundary of a cpu
   integer, dimension(1:nSNnei),save::icpuSNnei
   integer ,dimension(1:nvector,0:twondim):: ind_nbor
-  logical(dp),dimension(1:nvector,1:nSNnei),save ::snowplough
+  logical,dimension(1:nvector,1:nSNnei),save ::snowplough
   real(dp),dimension(1:nvector)::rStrom ! in pc
   real(dp)::dx_loc_pc,psn_tr,chi_tr,psn_thor98,psn_geen15,fthor
   real(dp)::km2cm=1d5,M_SN_var
@@ -756,7 +760,8 @@ subroutine mech_fine_snIa_mpi(ilevel)
   real(dp)::skip_loc(1:3),d,u,v,w,ekk,eth,d0,u0,v0,w0,eth0,ekk0,Tk0,ekk_ej,T2min
   integer::igrid,icell,ilevel,ilevel2,irad,ii,ich
   real(dp),dimension(1:twotondim,1:ndim),save::xc
-  logical(dp),dimension(1:nvector,1:nSNnei),save ::snowplough
+  logical,allocatable,dimension(:,:)::snowplough
+!  logical,dimension(1:nvector,1:nSNnei),save ::snowplough
 #ifdef RT
   real(dp),dimension(1:nIons),save::xion
 #endif
@@ -765,8 +770,6 @@ subroutine mech_fine_snIa_mpi(ilevel)
   real(dp)::km2cm=1d5,M_SN_var
 
   if(ndim.ne.3) return
-
-  snowplough = .false.
 
   !============================================================
   ! For MPI communication
@@ -925,7 +928,8 @@ subroutine mech_fine_snIa_mpi(ilevel)
   if(ncell_recv>0) then
      allocate(p_solid(1:np,1:nSNnei))
      allocate(ek_solid(1:np,1:nSNnei))
-     p_solid=0d0;ek_solid=0d0
+     allocate(snowplough(1:np,1:nSNnei))
+     p_solid=0d0;ek_solid=0d0;snowplough=.false.
   endif
 
   ! Compute the momentum first before redistributing mass
@@ -1144,7 +1148,7 @@ subroutine mech_fine_snIa_mpi(ilevel)
   deallocate(icpuSN_comm_mpi, icpuSN_comm)
   if(ncell_send>0) deallocate(list2send,SNsend,reqsend,statsend)
   if(ncell_recv>0) deallocate(list2recv,SNrecv,reqrecv,statrecv)
-  if(ncell_recv>0) deallocate(p_solid,ek_solid)
+  if(ncell_recv>0) deallocate(p_solid,ek_solid,snowplough)
 
   ncomm_SN=nSN_tot
 #endif

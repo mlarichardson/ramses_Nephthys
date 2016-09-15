@@ -309,6 +309,10 @@ subroutine mechanical_feedback_fine(ilevel,icount)
   endif
 #endif
 
+#ifdef RT
+   deallocate(L_star)
+#endif
+
 end subroutine mechanical_feedback_fine
 !################################################################
 !################################################################
@@ -356,12 +360,13 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
   ! For stars affecting across the boundary of a cpu
   integer, dimension(1:nSNnei),save::icpuSNnei
   integer ,dimension(1:nvector,0:twondim):: ind_nbor
-  logical(dp),dimension(1:nvector,1:nSNnei),save ::snowplough
+  logical, dimension(1:nvector,1:nSNnei),save ::snowplough
   real(dp),dimension(1:nvector)::rStrom ! in pc
   real(dp)::dx_loc_pc,psn_tr,chi_tr,psn_thor98,psn_geen15,fthor
   real(dp)::km2cm=1d5,M_SN_var,boost_geen_ad=0d0,p_hydro,vload_rad,f_wrt_snow
   ! chemical abundance
   real(dp),dimension(1:nchem)::chload,z_ch
+  real(dp)::frac_ref ! refinement variable in fraction
 
   ! Conversion factor from user units to cgs units
   call units(scale_l,scale_t,scale_d,scale_v,scale_nH,scale_T2)
@@ -402,6 +407,10 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
         print *, cpu_map(father(igrid)),myid
         print *, ilevel, ilevel2
         print *, ind_cell, icell
+        print *, i, np, ncoarse, ind_grid(i), ind_pos_cell(i), ngridmax
+        print *, xc2(1:3,i)
+        print *, xg(ind_grid(i),1:3)
+        print *, xc(ind_pos_cell(i),1:3)
         stop 
      endif
  
@@ -589,6 +598,9 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
         xion(ii+1) = uold(icell,iIons+ii)/d
      end do
 #endif
+     if(ivar_refine>5) then
+        frac_ref = uold(icell,ivar_refine)/d
+     endif
 
      mloadSN (i) = mSN (i)*f_LOAD + d*vol_loc*floadSN(i)
      if(metal)then
@@ -623,6 +635,9 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
         uold(icell,iIons+ii) = xion(ii+1) * uold(icell,1)
      end do
 #endif
+     if(ivar_refine>5) then
+        uold(icell,ivar_refine) = frac_ref * uold(icell,1)
+     endif
 
      ! original kinetic energy of the gas entrained
      eloadSN(i) = ekk*vol_loc*floadSN(i) 
@@ -750,11 +765,18 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
 
            ! update the hydro variable
            if(ilevel>ilevel2)then ! touching level-1 cells
+
+              ! Do not change the ionisation fraction and refinement variable
 #ifdef RT
               do ii=0,nIons-1 ! get the ionisation fraction
                  xion(ii+1)=unew(icell,iIons+ii)/unew(icell,1)
               end do
 #endif
+              if(ivar_refine>5)then
+                 frac_ref = unew(icell,ivar_refine)/unew(icell,1)
+              endif
+
+              ! update now
               unew(icell,1:5) = pvar(1:5)
               if(metal) unew(icell,imetal) = pvar(imetal)
               do ich=1,nchem
@@ -770,14 +792,22 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
                  unew(icell,ndim+2+irad) = pvar(ndim+2+irad)
               end do
 #endif
+              if(ivar_refine>5)then
+                 unew(icell,ivar_refine)=unew(icell,1)*frac_ref
+              endif
 
            else
-
+              ! Do not change the ionisation fraction and refinement variable
 #ifdef RT
               do ii=0,nIons-1 ! get the ionisation fraction
                  xion(ii+1)=uold(icell,iIons+ii)/uold(icell,1)
               end do
 #endif
+              if(ivar_refine>5)then
+                 frac_ref = uold(icell,ivar_refine)/uold(icell,1)
+              endif
+
+              ! update now
               uold(icell,1:5) = pvar(1:5)
               if(metal) uold(icell,imetal) = pvar(imetal)
               do ich=1,nchem
@@ -793,6 +823,9 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
                  uold(icell,ndim+2+irad) = pvar(ndim+2+irad)
               end do
 #endif
+              if(ivar_refine>5)then
+                 uold(icell,ivar_refine) = uold(icell,1)*frac_ref
+              endif
 
            endif 
 
@@ -869,17 +902,17 @@ subroutine mech_fine_mpi(ilevel)
   real(dp)::skip_loc(1:3),d,u,v,w,ekk,eth,d0,u0,v0,w0,eth0,ekk0,Tk0,ekk_ej,T2min
   integer::igrid,icell,ilevel,ilevel2,irad,ii,ich
   real(dp),dimension(1:twotondim,1:ndim),save::xc
-  logical(dp),dimension(1:nvector,1:nSNnei),save ::snowplough
+  logical,allocatable,dimension(:,:)::snowplough
+!  logical, dimension(1:nvector,1:nSNnei),save ::snowplough
 #ifdef RT
   real(dp),dimension(1:nIons),save::xion
 #endif
   real(dp),dimension(1:nchem),save::chloadSN_i
   real(dp)::rSt_i,dx_loc_pc,psn_tr,chi_tr,psn_thor98,psn_geen15,fthor
   real(dp)::km2cm=1d5,M_SN_var,boost_geen_ad=0d0,p_hydro,vload_rad,f_wrt_snow
+  real(dp)::frac_ref ! refinement variable in fraction
 
   if(ndim.ne.3) return
-
-  snowplough = .false.
 
   !============================================================
   ! For MPI communication
@@ -1038,7 +1071,8 @@ subroutine mech_fine_mpi(ilevel)
   if(ncell_recv>0) then
      allocate(p_solid(1:np,1:nSNnei))
      allocate(ek_solid(1:np,1:nSNnei))
-     p_solid=0d0;ek_solid=0d0
+     allocate(snowplough(1:np,1:nSNnei))
+     p_solid=0d0;ek_solid=0d0;snowplough=.false.
   endif
 
   ! Compute the momentum first before redistributing mass
@@ -1234,6 +1268,11 @@ subroutine mech_fine_mpi(ilevel)
                  xion(ii+1)=unew(icell,iIons+ii)/unew(icell,1)
               end do
 #endif
+              if(ivar_refine>5)then
+                 frac_ref=unew(icell,ivar_refine)/unew(icell,1)
+              endif
+
+              ! update now
               unew(icell,1:5) = pvar(1:5)
               if(metal) unew(icell,imetal) = pvar(imetal)
               do ich=1,nchem
@@ -1249,6 +1288,9 @@ subroutine mech_fine_mpi(ilevel)
                  unew(icell,ndim+2+irad) = pvar(ndim+2+irad)
               end do
 #endif
+              if(ivar_refine>5)then
+                 unew(icell,ivar_refine)=unew(icell,1)*frac_ref
+              endif
 
            else
 #ifdef RT
@@ -1256,6 +1298,11 @@ subroutine mech_fine_mpi(ilevel)
                  xion(ii+1)=uold(icell,iIons+ii)/uold(icell,1)
               end do
 #endif
+              if(ivar_refine>5)then
+                 frac_ref=uold(icell,ivar_refine)/uold(icell,1)
+              endif
+ 
+              ! update now
               uold(icell,1:5) = pvar(1:5)
               if(metal) uold(icell,imetal) = pvar(imetal)
               do ich=1,nchem
@@ -1271,6 +1318,9 @@ subroutine mech_fine_mpi(ilevel)
                  uold(icell,ndim+2+irad) = pvar(ndim+2+irad)
               end do
 #endif
+              if(ivar_refine>5)then
+                 uold(icell,ivar_refine)=uold(icell,1)*frac_ref
+              endif
            endif
  
         endif ! if this belongs to me
@@ -1283,7 +1333,7 @@ subroutine mech_fine_mpi(ilevel)
   deallocate(icpuSN_comm_mpi, icpuSN_comm)
   if(ncell_send>0) deallocate(list2send,SNsend,reqsend,statsend)
   if(ncell_recv>0) deallocate(list2recv,SNrecv,reqrecv,statrecv)
-  if(ncell_recv>0) deallocate(p_solid,ek_solid)
+  if(ncell_recv>0) deallocate(p_solid,ek_solid,snowplough)
 
   ncomm_SN=nSN_tot
 #endif
