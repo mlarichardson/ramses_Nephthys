@@ -5,16 +5,16 @@
 NVECTOR = 16
 NDIM = 3
 NPRE = 8
-NVAR = 15    # rho, u, v, w, P, (IR_P), Z, (H, C, N, O, Mg, Si, S, Fe), RefMap
-NGROUPS = 0
-NIONS = 0
-NENER = 0
+NVAR = 19    # rho, u, v, w, P, (IR_P), Z, (H, C, N, O, Mg, Si, S, Fe), xhei, xheii, xheiii, RefMap
+NGROUPS = 5
+NIONS = 3
+NENER = 1
 NCHEM = 8
 SOLVER = hydro
-PATCH = ../../src/patch/rt/mark_nephthys
+PATCH = ../../src/patch/rt/mark_nephthys_rt_subcycle
 EXEC = ramses
 ATON_FLAGS = #-DATON  # Uncomment to enable ATON.
-RT_FLAGS = #-DRT -DNIONS=$(NIONS) -DNGROUPS=$(NGROUPS)
+RT_FLAGS = -DRT -DNIONS=$(NIONS) -DNGROUPS=$(NGROUPS)
 #############################################################################
 GITBRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 GITHASH = $(shell git log --pretty=format:'%H' -n 1)

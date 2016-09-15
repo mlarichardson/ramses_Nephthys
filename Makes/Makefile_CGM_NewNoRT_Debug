@@ -5,35 +5,36 @@
 NVECTOR = 16
 NDIM = 3
 NPRE = 8
-NVAR = 15    # rho, u, v, w, P, (IR_P), Z, (H, C, N, O, Mg, Si, S, Fe), RefMap
+NVAR = 15 # rho, u, v, w, P, (IR_P), Z, (H, C, N, O, Mg, Si, S, Fe, RefMap
+NENER = 0
 NGROUPS = 0
 NIONS = 0
-NENER = 0
 NCHEM = 8
 SOLVER = hydro
 PATCH = ../../src/patch/rt/mark_nephthys
 EXEC = ramses
-ATON_FLAGS = #-DATON  # Uncomment to enable ATON.
+ATON_FLAGS = #-DATON # Uncomment to enable ATON
 RT_FLAGS = #-DRT -DNIONS=$(NIONS) -DNGROUPS=$(NGROUPS)
 #############################################################################
 GITBRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 GITHASH = $(shell git log --pretty=format:'%H' -n 1)
 GITREPO = $(shell git config --get remote.origin.url)
 BUILDDATE = $(shell date +"%D-%T")
-DEFINES = -DNVECTOR=$(NVECTOR) -DNDIM=$(NDIM) -DNPRE=$(NPRE)  -DNVAR=$(NVAR) \
-          -DSOLVER$(SOLVER) $(ATON_FLAGS) $(RT_FLAGS) -DNENER=$(NENER) -DQUADHILBERT -DNCHEM=$(NCHEM)
+DEFINES = -DNVECTOR=$(NVECTOR) -DNDIM=$(NDIM) -DNPRE=$(NPRE) $(RT_FLAGS) -DNENER=$(NENER) -DNVAR=$(NVAR) \
+          -DSOLVER$(SOLVER) -DQUADHILBERT $(ATON_FLAGS) -DNOSYSTEM -DNCHEM=$(NCHEM)
 #############################################################################
 # Fortran compiler options and directives
 
 # Added by Jon Wakelin (for Dirac Leicester)
 F90    = mpiifort
-FOPT   =  -O3
-#FOPT   =  -g -check all -xAVX -ipo -static_mpi -static-intel -check all -fpe0 -warn -traceback -debug extended
+#FOPT   =  -O3
+FOPT   =  -g -check all -xAVX -ipo -static_mpi -static-intel -check all -fpe0 -warn -traceback -debug all
+# -debug extended
 FFLAGS = -cpp $(FOPT) $(DEFINES) 
 
 # --- No MPI, gfortran -------------------------------
-#F90 = gfortran -O2 -frecord-marker=4 -fbacktrace -ffree-line-length-none -g
-#FFLAGS = -x f95-cpp-input $(DEFINES) 
+#F90 = gfortran -O3 -frecord-marker=4 -fbacktrace -ffree-line-length-none -g
+#FFLAGS = -x f95-cpp-input $(DEFINES) -DWITHOUTMPI
 
 # --- No MPI, tau ----------------------------------
 #F90 = tau_f90.sh -optKeepFiles -optPreProcess -optCPPOpts=$(DEFINES) -DWITHOUTMPI
@@ -55,13 +56,12 @@ FFLAGS = -cpp $(FOPT) $(DEFINES)
 #FFLAGS = -cpp $(DEFINES) -DWITHOUTMPI
 
 # --- MPI, gfortran syntax ------------------------------
-#F90 = mpif90 -frecord-marker=4 -O0 -ffree-line-length-none -g -fbacktrace -fcheck=bounds
+#F90 = mpif90 -frecord-marker=4 -O3 -ffree-line-length-none -g -fbacktrace 
 #FFLAGS = -x f95-cpp-input $(DEFINES)
-#F90 = mpif90 -frecord-marker=4 -O2 -ffree-line-length-none -fbacktrace -fcheck=bounds
 
-#FFLAGS = -O3 -g -cpp -ffree-line-length-none $(DEFINES) #-DNOSYSTEM
-#FFLAGS = -g -cpp -fbacktrace -ffree-line-length-none -fbounds-check $(DEFINES) -DRT #-DNOSYSTEM
-
+# --- MPI, gfortran DEBUG syntax ------------------------------ 
+#F90 = mpif90 -frecord-marker=4 -ffree-line-length-none -fbacktrace -g -O -fbounds-check -Wuninitialized -Wall
+#FFLAGS = -x f95-cpp-input -ffpe-trap=zero,underflow,overflow,invalid -finit-real=nan  $(DEFINES)    
 
 # --- MPI, pgf90 syntax ------------------------------
 #F90 = mpif90 -O3
@@ -69,13 +69,20 @@ FFLAGS = -cpp $(FOPT) $(DEFINES)
 
 # --- MPI, ifort syntax ------------------------------
 #F90 = mpif90
-#FOPTS = -g -check all -xAVX -ipo -static_mpi -static-intel -check all -fpe0 -warn -traceback -debug extended
-#FOPTS = -O3
-#FFLAGS = -cpp $(DEFINES) $(FOPTS) -DNOSYSTEM
+#FFLAGS = -cpp -fast $(DEFINES) -DNOSYSTEM
 
 # --- MPI, ifort syntax, additional checks -----------
 #F90 = mpif90
-#FFLAGS = -g -traceback -fpe0 -ftrapuv -cpp $(DEFINES) -DNOSYSTEM
+#FFLAGS = -warn all -O0 -g -traceback -fpe0 -ftrapuv -check bounds -cpp $(DEFINES) -DNOSYSTEM
+
+
+# --- MPI, ifort syntax ------------------------------
+#F90 = ftn
+#FFLAGS = -xAVX -g -traceback -fpp -fast $(DEFINES) -DNOSYSTEM #-DRT 
+
+# --- MPI, ifort syntax, additional checks -----------
+#F90 = ftn
+#FFLAGS = -O3 -g -traceback -fpe0 -ftrapuv -cpp $(DEFINES) -DNOSYSTEM #-DRT
 
 #############################################################################
 MOD = mod
@@ -87,19 +94,19 @@ LIBMPI =
 # --- CUDA libraries, for Titane ---
 LIBCUDA = -L/opt/cuda/lib  -lm -lcuda -lcudart
 
+LIBGRACKLE = -lgrackle -lhdf5 -lz
 LIBS = $(LIBMPI)
 #############################################################################
 # Sources directories are searched in this exact order
 VPATH = $(PATCH):../../src/$(SOLVER):../../src/aton:../../src/rt:../../src/hydro:../../src/pm:../../src/poisson:../../src/amr
 #############################################################################
 # All objects
-MODOBJ = amr_parameters.o amr_commons.o random.o pm_parameters.o pm_commons.o poisson_parameters.o poisson_commons.o hydro_parameters.o hydro_commons.o cooling_module.o bisection.o sparse_mat.o clfind_commons.o gadgetreadfile.o mechanical_commons.o write_gitinfo.o #write_makefile.o write_patch.o
+MODOBJ = amr_parameters.o amr_commons.o random.o pm_parameters.o pm_commons.o poisson_parameters.o poisson_commons.o hydro_parameters.o hydro_commons.o cooling_module.o bisection.o sparse_mat.o clfind_commons.o gadgetreadfile.o mechanical_commons.o write_gitinfo.o write_makefile.o write_patch.o
 
 ifneq (,$(findstring DRT,$(DEFINES)))
 MODOBJ := $(MODOBJ) rt_parameters.o rt_hydro_commons.o coolrates_module.o rt_spectra.o rt_cooling_module.o rt_flux_module.o 
 endif
 
-# AMR Objects
 AMROBJ = read_params.o init_amr.o init_time.o init_refine.o adaptive_loop.o amr_step.o update_time.o output_amr.o flag_utils.o physical_boundaries.o virtual_boundaries.o refine_utils.o nbors_utils.o hilbert.o load_balance.o title.o sort.o cooling_fine.o units.o light_cone.o movie.o
 
 # Particle-Mesh objects
@@ -127,18 +134,16 @@ ATON_OBJ = observe.o init_radiation.o rad_init.o rad_boundary.o rad_stars.o rad_
 #############################################################################
 ramses:	$(MODOBJ) $(AMRLIB) ramses.o
 	$(F90) $(MODOBJ) $(AMRLIB) ramses.o -o $(EXEC)$(NDIM)d $(LIBS)
-#	rm write_makefile.f90
-#rm write_patch.f90
-
+	rm write_makefile.f90
+	rm write_patch.f90
 ramses_aton: $(MODOBJ) $(ATON_MODOBJ) $(AMRLIB) $(ATON_OBJ) ramses.o
 	$(F90) $(MODOBJ) $(ATON_MODOBJ) $(AMRLIB) $(ATON_OBJ) ramses.o -o $(EXEC)$(NDIM)d $(LIBS) $(LIBCUDA)
-#	rm write_makefile.f90
-#	rm write_patch.f90
+	rm write_makefile.f90
+	rm write_patch.f90
 #############################################################################
 write_gitinfo.o: FORCE
 	$(F90) $(FFLAGS) -DPATCH=\'$(PATCH)\' -DGITBRANCH=\'$(GITBRANCH)\' -DGITHASH=\'"$(GITHASH)"\' \
  -DGITREPO=\'$(GITREPO)\' -DBUILDDATE=\'"$(BUILDDATE)"\' -c ../../src/amr/write_gitinfo.f90 -o $@		
-
 write_makefile.o: FORCE
 	../../src/utils/scripts/cr_write_makefile.sh $(MAKEFILE_LIST)
 	$(F90) $(FFLAGS) -c write_makefile.f90 -o $@

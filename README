@@ -29,3 +29,32 @@ $ bin/ramses1d namelist/tube1d.nml
 Enjoy !
 
 
+# ===========
+
+Note from Mark Richardson regarding repository at https://github.com/mlarichardson/ramses_Nephthys
+Recommend way to develop this ramses code:
+
+>> git clone https://github.com/mlarichardson/ramses_Nephthys
+>> mv ramses_Nephthys src
+>> mkdir ramses_Nephthys
+>> mv src ramses_Nephthys
+>> cd ramses_Nephthys
+>> ln -s src/Makes
+>> mkdir builds
+
+Then when you want to build a given repository, develop the desired Makefile in Makes/, go down to the ramses_Nephthys repository, and do:
+>> ./src/utils/buildRamses -M NEW_MAKEFILE -O bin_NEWBUILD
+
+This will:
+  cd into builds/
+  mkdir bin_NEWBUILD
+  cd bin_NEWBUILD
+  cp ../../Makes/NEW_MAKEFILE ./Makefile
+  mkdir source/
+  cd source
+  ln -s {ALL SOURCE FILES FOR THIS BUILD}
+  cd ../
+  make 
+  cd ../../
+
+  

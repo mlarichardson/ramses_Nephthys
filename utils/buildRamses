@@ -1,0 +1,290 @@
+#!/bin/bash
+
+VER=
+
+if [[ $# -lt 4 ]] ; then
+  echo "Usage: buildRamses -M MAKEFILE_NAME -O BUILD_DIR [-V] [-RT]"
+  exit
+fi
+
+# Verbosity
+if [[ $1 == "-v" || $1 == "-V" || $3 == "-v" || $3 == "-V" ]] ; then
+    VER=true
+fi
+if [[ $# -eq 5 ]] && [[ $5 == "-v" || $5 == "-V" ]] ; then
+    VER=true
+fi
+
+RT=0
+if [[ $# -eq 5 ]] && [[ $5 == "-RT" ]] ; then
+  RT=1
+  echo "Including RT files"
+fi
+if [[ $# -eq 6 ]] && [[ $6 == "-RT" ]] ; then
+  RT=1
+  echo "Including RT files"
+fi
+
+
+# Makefile
+if [[ $1 == "-M" || $1 == "-m" ]] ; then
+  MFILE=$2
+else
+  if [[ $2 == "-M" || $2 == "-m" ]] ; then
+    MFILE=$3
+  else
+    if [[ $2 == "-M" || $2 == "-m" ]] ; then
+      MFILE=$3
+    else
+      if [[ $3 == "-M" || $3 == "-m" ]] ; then
+        MFILE=$4
+      else
+        if [[ $# -eq 5 ]] && [[ $4 == "-M" || $4 == "-m" ]] ; then
+          MFILE=$5
+        else
+          echo "You did not set the -M flag."
+          exit
+        fi
+      fi
+    fi
+  fi
+fi 
+
+
+# Build directory
+if [[ $1 == "-O" || $1 == "-o" ]] ; then
+  OFILE=$2
+else
+  if [[ $2 == "-O" || $2 == "-o" ]] ; then
+    OFILE=$3
+  else
+    if [[ $2 == "-O" || $2 == "-o" ]] ; then
+      OFILE=$3
+    else
+      if [[ $3 == "-O" || $3 == "-o" ]] ; then
+        OFILE=$4
+      else
+        if [[ $# -eq 5 ]] && [[ $4 == "-O" || $4 == "-o" ]] ; then
+          OFILE=$5
+        else
+          echo "You did not set the -O flag."
+          exit
+        fi
+      fi
+    fi
+  fi
+fi 
+
+cd builds
+if [[ -e $OFILE ]] ; then
+  cd $OFILE
+  rm *o ramses?d
+else
+  mkdir $OFILE
+  cd $OFILE
+fi
+      
+if [[ ! -e $MFILE ]] ; then
+  if [[ -e ../$MFILE ]] ; then
+    MFILE="../$MFILE"
+  else
+    if [[ -e ../Makes/$MFILE ]] ; then
+      MFILE="../Makes/$MFILE"
+    else
+      if [[ -e ../../Makes/$MFILE ]] ; then
+        MFILE="../../Makes/$MFILE"
+      else
+        echo "I can't find the makefile."
+        exit
+      fi
+    fi
+  fi
+fi 
+
+EXEC=ramses
+NDIM=`grep  NDIM $MFILE | head -1 | sed 's/^.*= *//'`
+
+PATCH=`grep  PATCH $MFILE | head -1 | sed 's/^.*= *//'`
+ln -s ../../src/.git 
+
+if [[ $VER ]]; then
+  echo "Using PATH = $PATH"
+  echo
+fi
+
+SOLVER=`grep SOLVER $MFILE | head -1 | sed 's/^.*= *//'`
+if [[ $VER ]]; then
+  echo "Using SOLVER = $SOLVER"
+  echo
+fi
+
+VPATH="$PATCH ../$SOLVER `grep VPATH $MFILE | head -1 | sed 's/^.*)//' | sed 's/:/ /g' `"
+if [[ $VER ]]; then
+  echo "Using VPATH = $VPATH"
+  echo
+fi
+
+
+AMROBJ=`grep AMROBJ $MFILE | head -1 | sed 's/^.*= *//' | sed 's/\.o/.f90/g'`
+if [[ $VER ]]; then
+  echo "Using AMROBJ = $AMROBJ"
+  echo
+fi
+
+MODOBJ=`grep MODOBJ $MFILE | head -1 | sed 's/^.*= *//' | sed 's/\.o/.f90/g'`
+if [[ $VER ]]; then
+  echo "Using MODOBJ = $MODOBJ"
+  echo
+fi
+
+if [[ $RT -eq 1 ]] ; then
+  MODOBJ2=`grep MODOBJ $MFILE | head -2 | tail -1 | sed 's/^.*) rt/rt/' | sed 's/\.o/.f90/g'`
+  MODOBJ=`echo $MODOBJ $MODOBJ2`
+  RTOBJ=`grep RTOBJ $MFILE | head -1 | sed 's/^.*= *//' | sed 's/\.o/.f90/g'`
+fi
+
+PMOBJ=`grep  PMOBJ $MFILE | head -1 | sed 's/^.*= *//' | sed 's/\.o/.f90/g'`
+if [[ $VER ]]; then
+  echo "Using PMOBJ = $PMOBJ"
+  echo
+fi
+
+
+POISSONOBJ=`grep POISSONOBJ $MFILE | head -1 | sed 's/^.*= *//' | sed 's/\.o/.f90/g'`
+if [[ $VER ]]; then
+  echo "Using POISSONOBJ = $POISSONOBJ"
+  echo
+fi
+
+HYDROOBJ=`grep   HYDROOBJ $MFILE | head -1 | sed 's/^.*= *//' | sed 's/\.o/.f90/g'`
+if [[ $VER ]]; then
+  echo "Using HYDROOBJ = $HYDROOBJ"
+  echo
+fi
+
+if [[ ! -e source ]] ; then
+  mkdir source
+else 
+  rm source/*
+fi
+
+for DIR in $VPATH; do
+  if [[ -e $DIR/ramses.f90 ]] ; then
+    cd source
+    ln -s ../$DIR/ramses.f90 ./
+    cd ../
+    break
+  fi
+done
+
+for FILE in $AMROBJ; do
+  for DIR in $VPATH; do
+    if [[ -e $DIR/$FILE ]] ; then
+      cd source
+      ln -s ../$DIR/$FILE ./
+      cd ../
+      break
+    fi
+  done
+
+  if [[ ! -e source/$FILE ]] ; then
+    echo "Did not find AMR file $FILE"
+  fi
+done
+
+for FILE in $MODOBJ; do
+  for DIR in $VPATH; do
+    if [[ -e $DIR/$FILE ]] ; then
+      cd source
+      ln -s ../$DIR/$FILE ./
+      cd ../
+      break
+    fi
+  done
+
+  if [[ ! -e source/$FILE ]] ; then
+    echo "Did not find MOD file $FILE"
+  fi
+done
+
+for FILE in $PMOBJ; do
+  for DIR in $VPATH; do
+    if [[ -e $DIR/$FILE ]] ; then
+      cd source
+      ln -s ../$DIR/$FILE ./
+      cd ../
+      break
+    fi
+  done
+
+  if [[ ! -e source/$FILE ]] ; then
+    echo "Did not find PM file $FILE"
+  fi
+done
+
+for FILE in $POISSONOBJ; do
+  for DIR in $VPATH; do
+    if [[ -e $DIR/$FILE ]] ; then
+      cd source
+      ln -s ../$DIR/$FILE ./
+      cd ../
+      break
+    fi
+  done
+
+  if [[ ! -e source/$FILE ]] ; then
+    echo "Did not find POISSON file $FILE"
+  fi
+done
+
+for FILE in $HYDROOBJ; do
+  for DIR in $VPATH; do
+    if [[ -e $DIR/$FILE ]] ; then
+      cd source
+      ln -s ../$DIR/$FILE ./
+      cd ../
+      break
+    fi
+  done
+
+  if [[ ! -e source/$FILE ]] ; then
+    echo "Did not find HYDRO file $FILE"
+  fi
+done
+
+if [[ $RT -eq 1 ]] ; then
+  for FILE in $RTOBJ; do
+    for DIR in $VPATH; do
+      if [[ -e $DIR/$FILE ]] ; then
+        cd source
+        ln -s ../$DIR/$FILE ./
+        cd ../
+        break
+      fi
+    done
+  
+    if [[ ! -e source/$FILE ]] ; then
+      echo "Did not find RT file $FILE"
+    fi
+  done
+fi
+
+cp $MFILE ./Makefile
+make
+
+if [[ -e ./${EXEC}${NDIM}d ]] ; then
+
+  echo
+  echo "Complete! You will now find:"
+  echo " -->  links to source files in ./build/${OFILE}/source"
+  echo " -->  produced object files in ./build/${OFILE}"
+  echo "And, last but not least ..."
+  echo " -->  the executable ./build/${OFILE}/${EXEC}${NDIM}d"
+  echo "Now go do science!"
+  echo
+
+else
+  echo "Hmmm seems the executable wasn't made."
+  echo "See above for make errors. Good luck."
+fi
+
