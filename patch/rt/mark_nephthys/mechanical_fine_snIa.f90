@@ -431,7 +431,7 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
            psn_thor98   = A_SN * num_sn**(expE_SN) * nH_nei**(expN_SN) * Z_neisol**(expZ_SN)  !km/s Msun
            psn_tr       = psn_thor98 
 
-           chi_tr   = psn_tr**2d0 / (2d0 * num_sn * (E_SNIa/msun2g/km2cm**2d0) * M_SN_var * f_esn)
+           chi_tr   = psn_tr**2d0 / (2d0 * num_sn**2d0 * (E_SNIa/msun2g/km2cm**2d0) * M_SN_var * f_esn)
            !          (Msun*km/s)^2                 (Msun *km2/s2)              (Msun)
            f_w_crit = max(chi_tr-1d0, 0d0)
  
@@ -974,7 +974,7 @@ subroutine mech_fine_snIa_mpi(ilevel)
            psn_thor98   = A_SN * num_sn**(expE_SN) * nH_nei**(expN_SN) * Z_neisol**(expZ_SN)  !km/s Msun
            psn_tr       = psn_thor98 
 
-           chi_tr   = psn_tr**2d0 / (2d0 * num_sn * (E_SNIa/msun2g/km2cm**2d0) * M_SN_var * f_esn)
+           chi_tr   = psn_tr**2d0 / (2d0 * num_sn**2d0 * (E_SNIa/msun2g/km2cm**2d0) * M_SN_var * f_esn)
            !          (Msun*km/s)^2                 (Msun *km2/s2)              (Msun)
            f_w_crit = max(chi_tr-1d0, 0d0)
  

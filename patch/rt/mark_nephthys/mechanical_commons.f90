@@ -28,7 +28,7 @@ module mechanical_commons
    real(dp),parameter:: expE_SN=+16d0/17d0
    real(dp),parameter:: expZ_SN=-0.14
    real(dp),parameter:: expN_SN_boost=-0.15
-   real(dp),parameter:: expE_SN_boost=16d0/17d0
+   real(dp),parameter:: expE_SN_boost=0.9d0
 
 #ifndef WITHOUTMPI
   ! common lists for SNe across different cpus
