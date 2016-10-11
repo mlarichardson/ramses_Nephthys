@@ -43,7 +43,7 @@ subroutine file_descriptor_hydro(filename)
 #if NVAR>NDIM+2+NENER
   ! Passive scalars
   do ivar=ndim+3+nener,nvar
-     write(ilun,'("variable #",I2,": passive_scalar_",I2)')ivar,ivar-ndim-2-nener
+     write(ilun,'("variable #",I2,": passive_scalar_",I1)')ivar,ivar-ndim-2-nener
   end do
 #endif
   

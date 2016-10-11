@@ -10,6 +10,7 @@ module rt_parameters
 
   real(dp)::rt_c=0., rt_c2=0.                ! RT constants in user units (set in init_rt)
   real(dp),parameter::c_cgs=2.9979250d+10                  ! Actual lightspeed in [cm s-1]
+  real(dp),parameter::one_over_c_cgs=3.335640484668562d-11  ! save some computation
   real(dp)::rt_c_cgs=c_cgs                                     ! RT lightspeed in [cm s-1]
   real(dp),parameter::m_sun=1.9891d33               ! Solar mass [g], for SED calculations
   real(dp),parameter::eV_to_erg=1.6022d-12          !        eV to erg conversion constant
@@ -49,8 +50,6 @@ module rt_parameters
   logical::rt_use_hll=.false.          ! Use hll flux (or the default glf)               !
   logical::rt_is_outflow_bound=.false. ! Make all boundaries=outflow for RT              !
   real(dp)::rt_courant_factor=0.8d0    ! Courant factor for RT timesteps                 !
-  integer::rt_nsubcycle=100            ! Maximum number of RT steps in a hydro step      !
-                                       !  Note, this is enforced by shrinking hydro step !
   logical::rt_refine=.false.           ! Refine on RT-related conditions?                !
   real(dp)::rt_err_grad_n=-1.0         ! Photon number density gradient for refinement   !
   real(dp)::rt_floor_n=1.d-10          ! Photon number density floor for refinement      !
@@ -60,6 +59,8 @@ module rt_parameters
   real(dp)::rt_floor_xHI=1.d-10        ! Ionization state floor for refinement           !
   real(dp)::rt_floor_xHII=1.d-10       ! Ionization state floor for refinement           !
   real(dp)::rt_c_fraction=1.d0         ! Actual lightspeed fraction for RT lightspeed    !
+  integer::rt_nsubcycle=1                ! Maximum number of RT-steps during one hydro/    !
+                                       ! gravity/etc timestep                            !
   logical::rt_otsa=.true.              ! Use on-the-spot approximation                   !
   logical::rt_isDiffuseUVsrc=.false.   ! UV emission from low-density cells              !
   real(dp)::rt_UVsrc_nHmax=-1.d0       ! Density threshold for UV emission               !
@@ -143,5 +144,5 @@ module rt_parameters
   logical::doDump = .false.
 
   integer,dimension(1:NGROUPS)::rt_movie_vars=0 ! For generating cNp movies
-  
+
 end module rt_parameters

@@ -220,7 +220,7 @@ subroutine rt_init_flow_fine(ilevel)
            ! In most cases, this is zero (you can change that if necessary)
            if(myid==1)write(*,*)'File '//TRIM(filename)//' not found'
            if(myid==1)write(*,*)'Initialize corresponding variable to default value'
-           if(ncache>0)init_array=0d0
+           init_array=0d0
         endif
 
         if(ncache>0)then
