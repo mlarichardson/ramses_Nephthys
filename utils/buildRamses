@@ -95,6 +95,7 @@ if [[ ! -e $MFILE ]] ; then
         MFILE="../../Makes/$HOSTNAME/$MFILE"
       else
         if [[ -e ../../Makes/$MFILE ]] ; then
+          echo "I can't find makefile: ../../Makes/$HOSTNAME/$MFILE , using Default" 
           MFILE="../../Makes/$MFILE"
         else
           echo "I can't find the makefile."

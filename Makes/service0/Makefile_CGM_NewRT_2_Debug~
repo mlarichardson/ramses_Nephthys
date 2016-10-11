@@ -26,16 +26,10 @@ DEFINES = -DNVECTOR=$(NVECTOR) -DNDIM=$(NDIM) -DNPRE=$(NPRE)  -DNVAR=$(NVAR) \
 # Fortran compiler options and directives
 
 # Added by Jon Wakelin (for Dirac Leicester)
-#F90    = mpiifort
-#FOPT   =  -O3
-#FOPT   =  -g -O0 -check all -xAVX -ipo -static_mpi -static-intel -check all -fpe0 -warn -traceback -debug extended
-#FFLAGS = -cpp $(FOPT) $(DEFINES) 
-
-# Berg
-F90 = mpif90
+F90    = mpiifort
 #FOPT   =  -O3
 FOPT   =  -g -O0 -check all -xAVX -ipo -static_mpi -static-intel -check all -fpe0 -warn -traceback -debug extended
-FFLAGS = -cpp $(FOPT) $(DEFINES)
+FFLAGS = -cpp $(FOPT) $(DEFINES) 
 
 # --- No MPI, gfortran -------------------------------
 #F90 = gfortran -O2 -frecord-marker=4 -fbacktrace -ffree-line-length-none -g
