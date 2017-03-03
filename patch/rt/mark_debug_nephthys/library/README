@@ -1,0 +1,13 @@
+galaxy_extra_field.f
+	- the source file of Starburst99. 
+	  Output fields are modified to disentangle the mass loss, energy between winds and SNe
+
+starburst_input1
+	- an example input file for starburst99
+
+make_stellar_wind.pro
+	- IDL routine that converts the starburst99 results to the binary, 
+	  which is necessary for the stellar wind routine in RAMSES
+
+sn1a.pro, sn1a.f90
+	- test of the SNIa time delay

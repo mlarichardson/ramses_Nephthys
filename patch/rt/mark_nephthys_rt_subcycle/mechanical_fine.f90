@@ -2,6 +2,7 @@
 ! Minor fixed to thermal injection and accounting for NENER and 
 ! ionisation fractions
 ! Taysun added chem (Jun 2016)
+! Taysun fixed some bugs (Nov 2016)
 !####################################################################
 !####################################################################
 !####################################################################
@@ -435,6 +436,10 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
     
      if(Tk<0)then
         print *,'TKERR : mech fbk (pre-call): TK<0', TK,icell
+        print *,'nH [H/cc]= ',d*scale_nH
+        print *,'u  [km/s]= ',u*scale_v/1d5
+        print *,'v  [km/s]= ',v*scale_v/1d5
+        print *,'w  [km/s]= ',w*scale_v/1d5
         stop
      endif
 
@@ -530,12 +535,12 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
               ! For adiabatic phase
               ! psn_tr =  A_SN * (E51 * boost_geen)**expE_SN_boost * nH_nei**(expN_SN_boost) * Z_neisol**(expZ_SN)
               !        =  p_hydro * boost_geen**expE_SN_boost
-              p_hydro = A_SN * num_sn**(expN_SN_boost) * nH_nei**(expN_SN_boost) * Z_neisol**(expZ_SN)
+              p_hydro = A_SN * num_sn**(expE_SN_boost) * nH_nei**(expN_SN_boost) * Z_neisol**(expZ_SN)
               boost_geen_ad = (psn_tr / p_hydro)**(1d0/expE_SN_boost)
               boost_geen_ad = max(boost_geen_ad-1d0,0.0)
            endif
 
-           chi_tr   = psn_tr**2d0 / (2d0 * num_sn * (E_SNII/msun2g/km2cm**2d0) * M_SN_var * f_ESN)
+           chi_tr   = psn_tr**2d0 / (2d0 * num_sn**2d0 * (E_SNII/msun2g/km2cm**2d0) * M_SN_var * f_ESN)
            !          (Msun*km/s)^2                 (Msun *km2/s2)              (Msun)
            f_w_crit = max(chi_tr-1d0, 0d0)
 
@@ -643,11 +648,11 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
      ! original kinetic energy of the gas entrained
      eloadSN(i) = ekk*vol_loc*floadSN(i) 
 
-     ! original thermal energy of the gas entrained (including the non-thermal part)
+     ! original thermal energy of the gas entrained (non-thermal part is not included)
      eloadSN(i) = eloadSN(i) + eth*vol_loc*floadSN(i)
 
      ! reduce total energy as we are distributing it to the neighbours
-     uold(icell,5) = uold(icell,5)*fleftSN 
+     uold(icell,5) = uold(icell,5) - (ekk+eth)*floadSN(i) 
 
      ! add the contribution from the original kinetic energy of SN particle
      d = mSN(i)/vol_loc
@@ -661,6 +666,27 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
 
      ! update ek_solid     
      ek_solid(i,:) = ek_solid(i,:) + eloadSN(i)/dble(nSNnei)
+
+     ! check the temperature
+     d     = uold(icell,1)
+     u     = uold(icell,2)/d
+     v     = uold(icell,3)/d
+     w     = uold(icell,4)/d
+     e     = uold(icell,5)
+#if NENER>0
+     do irad=1,nener
+        e = e - uold(icell,ndim+2+irad)
+     enddo
+#endif
+     ekk   = 0.5*d*(u**2 + v**2 + w**2)
+     eth   = e - ekk  ! thermal pressure 
+     Tk    = eth/d*scale_T2*(gamma-1)
+     T2min = T2_star*(d*scale_nH/n_star)**g_star
+     if(Tk<T2min)then
+        write(*,*) 'TKWARN: T central cell is too cold =', Tk, T2min
+        eth0=T2min*d/scale_T2/(gamma-1)
+        uold(icell,5) = uold(icell,5) + (eth0-eth)
+     endif 
 
   enddo  ! loop over SN cell
 
@@ -747,7 +773,12 @@ subroutine mech_fine(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN,nphS
 
            Tk = (pvar(5)-ekk)/d*scale_T2*(gamma-1)*0.6
            if(Tk<0)then
-              print *, 'TKERR: mech (post-call): Tk<0 =',sngl(Tk),sngl(d*scale_nH),sngl(Tk0),ilevel2
+              print *,'TKERR: mech (post-call): Tk<0 =',Tk
+              print *,'nH [H/cc]= ',d*scale_nH
+              print *,'u  [km/s]= ',u*scale_v/1d5
+              print *,'v  [km/s]= ',v*scale_v/1d5
+              print *,'w  [km/s]= ',w*scale_v/1d5
+              print *,'T0 [K]   = ',Tk0
               stop
            endif 
 
@@ -1131,11 +1162,11 @@ subroutine mech_fine_mpi(ilevel)
               ! For adiabatic phase
               ! psn_tr =  A_SN * (E51 * boost_geen)**expE_SN_boost * nH_nei**(expN_SN_boost) * Z_neisol**(expZ_SN)
               !        =  p_hydro * boost_geen**expE_SN_boost
-              p_hydro = A_SN * num_sn**(expN_SN_boost) * nH_nei**(expN_SN_boost) * Z_neisol**(expZ_SN)
+              p_hydro = A_SN * num_sn**(expE_SN_boost) * nH_nei**(expN_SN_boost) * Z_neisol**(expZ_SN)
               boost_geen_ad = (psn_tr / p_hydro)**(1d0/expE_SN_boost)
               boost_geen_ad = max(boost_geen_ad-1d0,0.0)
            endif
-           chi_tr   = psn_tr**2d0 / (2d0 * num_sn * (E_SNII/msun2g/km2cm**2d0) * M_SN_var * f_ESN)
+           chi_tr   = psn_tr**2d0 / (2d0 * num_sn**2d0 * (E_SNII/msun2g/km2cm**2d0) * M_SN_var * f_ESN)
            !          (Msun*km/s)^2                 (Msun *km2/s2)              (Msun)
            f_w_crit = max(chi_tr-1d0, 0d0)
  

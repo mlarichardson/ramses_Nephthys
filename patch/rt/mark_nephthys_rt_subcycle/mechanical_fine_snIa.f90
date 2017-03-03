@@ -239,7 +239,7 @@ subroutine mechanical_feedback_snIa_fine(ilevel,icount)
 #ifdef RT
    deallocate(L_star)
 #endif
-
+ 
 end subroutine mechanical_feedback_snIa_fine
 !################################################################
 !################################################################
@@ -255,6 +255,7 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
   implicit none
   integer::np,ilevel ! actually the number of cells
   integer,dimension(1:nvector)::ind_grid,ind_pos_cell
+  integer,dimension(nvector)::icellvec
   real(dp),dimension(1:nvector)::nSN,mSN,mZSN,floadSN,nphSN
   real(dp),dimension(1:nvector)::mloadSN,mZloadSN,eloadSN
   real(dp),dimension(1:nvector,1:3)::pSN,ploadSN
@@ -262,7 +263,6 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
   !-----------------------------------------------------------------------
   ! This routine is called by subroutine mechanical_feedback_fine 
   !-----------------------------------------------------------------------
-  integer,dimension(nvector)::icellvec
   integer::i,j,nwco,nwco_here,idim,icell,igrid,ista,iend,ilevel2
   integer::ind_cell,ncell,irad,ii,ich
   real(dp)::d,u,v,w,e,z,eth,ekk,Tk,d0,u0,v0,w0,dteff
@@ -293,6 +293,7 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
   real(dp)::km2cm=1d5,M_SN_var
   ! chemical abundance
   real(dp),dimension(1:nchem)::chload,z_ch
+  real(dp)::frac_ref ! refinement variable in fraction
 
   ! Conversion factor from user units to cgs units
   call units(scale_l,scale_t,scale_d,scale_v,scale_nH,scale_T2)
@@ -356,8 +357,13 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
     
      if(Tk<0)then
         print *,'TKERR : mech fbk (pre-call): TK<0', TK,icell
+        print *,'nH [H/cc]= ',d*scale_nH
+        print *,'u  [km/s]= ',u*scale_v/1d5
+        print *,'v  [km/s]= ',v*scale_v/1d5
+        print *,'w  [km/s]= ',w*scale_v/1d5
         stop
      endif
+
 
      !==========================================
      ! estimate floadSN(i)
@@ -431,7 +437,7 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
            psn_thor98   = A_SN * num_sn**(expE_SN) * nH_nei**(expN_SN) * Z_neisol**(expZ_SN)  !km/s Msun
            psn_tr       = psn_thor98 
 
-           chi_tr   = psn_tr**2d0 / (2d0 * num_sn * (E_SNIa/msun2g/km2cm**2d0) * M_SN_var * f_esn)
+           chi_tr   = psn_tr**2d0 / (2d0 * num_sn**2.d0 * (E_SNIa/msun2g/km2cm**2d0) * M_SN_var * f_esn)
            !          (Msun*km/s)^2                 (Msun *km2/s2)              (Msun)
            f_w_crit = max(chi_tr-1d0, 0d0)
  
@@ -480,6 +486,9 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
         xion(ii+1) = uold(icell,iIons+ii)/d
      end do
 #endif
+     if(ivar_refine>5) then
+        frac_ref = uold(icell,ivar_refine)/d
+     endif
 
      mloadSN (i) = mSN (i)*f_LOAD + d*vol_loc*floadSN(i)
      if(metal)then
@@ -514,15 +523,18 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
         uold(icell,iIons+ii) = xion(ii+1) * uold(icell,1)
      end do
 #endif
+     if(ivar_refine>5) then
+        uold(icell,ivar_refine) = frac_ref * uold(icell,1)
+     endif
 
      ! original kinetic energy of the gas entrained
      eloadSN(i) = ekk*vol_loc*floadSN(i) 
 
-     ! original thermal energy of the gas entrained (including the non-thermal part)
+     ! original thermal energy of the gas entrained (the non-thermal part is not included)
      eloadSN(i) = eloadSN(i) + eth*vol_loc*floadSN(i)
 
      ! reduce total energy as we are distributing it to the neighbours
-     uold(icell,5) = uold(icell,5)*fleftSN 
+     uold(icell,5) = uold(icell,5) - (eth+ekk)*floadSN(i)
 
      ! add the contribution from the original kinetic energy of SN particle
      d = mSN(i)/vol_loc
@@ -536,6 +548,27 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
 
      ! update ek_solid     
      ek_solid(i,:) = ek_solid(i,:) + eloadSN(i)/dble(nSNnei)
+
+     ! check the temperature
+     d     = uold(icell,1)
+     u     = uold(icell,2)/d
+     v     = uold(icell,3)/d
+     w     = uold(icell,4)/d
+     e     = uold(icell,5)
+#if NENER>0
+     do irad=1,nener
+        e = e - uold(icell,ndim+2+irad)
+     enddo
+#endif
+     ekk   = 0.5*d*(u**2 + v**2 + w**2)
+     eth   = e - ekk  ! thermal pressure 
+     Tk    = eth/d*scale_T2*(gamma-1)
+     T2min = T2_star*(d*scale_nH/n_star)**g_star
+     if(Tk<T2min)then
+        write(*,*) 'TKWARN: T central cell is too cold =', Tk, T2min
+        eth0=T2min*d/scale_T2/(gamma-1)
+        uold(icell,5) = uold(icell,5) + (eth0-eth)
+     endif 
 
   enddo  ! loop over SN cell
 
@@ -622,9 +655,15 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
 
            Tk = (pvar(5)-ekk)/d*scale_T2*(gamma-1)*0.6
            if(Tk<0)then
-              print *, 'TKERR: mech (post-call): Tk<0 =',sngl(Tk),sngl(d*scale_nH),sngl(Tk0),ilevel2
+              print *,'TKERR: mech (post-call): Tk<0 =',Tk
+              print *,'nH [H/cc]= ',d*scale_nH
+              print *,'u  [km/s]= ',u*scale_v/1d5
+              print *,'v  [km/s]= ',v*scale_v/1d5
+              print *,'w  [km/s]= ',w*scale_v/1d5
+              print *,'T0 [K]   = ',Tk0
               stop
            endif 
+
 
 #if NENER>0
            do irad=1,nener
@@ -646,6 +685,11 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
                  xion(ii+1)=unew(icell,iIons+ii)/unew(icell,1)
               end do
 #endif
+              if(ivar_refine>5)then
+                 frac_ref = unew(icell,ivar_refine)/unew(icell,1)
+              endif
+       
+              ! update now
               unew(icell,1:5) = pvar(1:5)
               if(metal) unew(icell,imetal) = pvar(imetal)
               do ich=1,nchem
@@ -661,6 +705,9 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
                  unew(icell,ndim+2+irad) = pvar(ndim+2+irad)
               end do
 #endif
+              if(ivar_refine>5)then
+                 unew(icell,ivar_refine)=unew(icell,1)*frac_ref
+              endif
 
            else
 
@@ -669,6 +716,11 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
                  xion(ii+1)=uold(icell,iIons+ii)/uold(icell,1)
               end do
 #endif
+              if(ivar_refine>5)then
+                 frac_ref = uold(icell,ivar_refine)/uold(icell,1)
+              endif
+
+              ! update now
               uold(icell,1:5) = pvar(1:5)
               if(metal) uold(icell,imetal) = pvar(imetal)
               do ich=1,nchem
@@ -684,6 +736,9 @@ subroutine mech_fine_snIa(ind_grid,ind_pos_cell,np,ilevel,dteff,nSN,mSN,pSN,mZSN
                  uold(icell,ndim+2+irad) = pvar(ndim+2+irad)
               end do
 #endif
+              if(ivar_refine>5)then
+                 uold(icell,ivar_refine) = uold(icell,1)*frac_ref
+              endif
 
            endif 
 
@@ -761,13 +816,14 @@ subroutine mech_fine_snIa_mpi(ilevel)
   integer::igrid,icell,ilevel,ilevel2,irad,ii,ich
   real(dp),dimension(1:twotondim,1:ndim),save::xc
   logical,allocatable,dimension(:,:)::snowplough
-!  logical,dimension(1:nvector,1:nSNnei),save ::snowplough
+!  logical(dp),dimension(1:nvector,1:nSNnei),save ::snowplough
 #ifdef RT
   real(dp),dimension(1:nIons),save::xion
 #endif
   real(dp),dimension(1:nchem),save::chloadSN_i
   real(dp)::rSt_i,dx_loc_pc,psn_tr,chi_tr,psn_thor98,psn_geen15,fthor
   real(dp)::km2cm=1d5,M_SN_var
+  real(dp)::frac_ref ! refinement variable in fraction
 
   if(ndim.ne.3) return
 
@@ -974,7 +1030,7 @@ subroutine mech_fine_snIa_mpi(ilevel)
            psn_thor98   = A_SN * num_sn**(expE_SN) * nH_nei**(expN_SN) * Z_neisol**(expZ_SN)  !km/s Msun
            psn_tr       = psn_thor98 
 
-           chi_tr   = psn_tr**2d0 / (2d0 * num_sn * (E_SNIa/msun2g/km2cm**2d0) * M_SN_var * f_esn)
+           chi_tr   = psn_tr**2d0 / (2d0 * num_sn**2.d0 * (E_SNIa/msun2g/km2cm**2d0) * M_SN_var * f_esn)
            !          (Msun*km/s)^2                 (Msun *km2/s2)              (Msun)
            f_w_crit = max(chi_tr-1d0, 0d0)
  
@@ -1099,6 +1155,11 @@ subroutine mech_fine_snIa_mpi(ilevel)
                  xion(ii+1)=unew(icell,iIons+ii)/unew(icell,1)
               end do
 #endif
+              if(ivar_refine>5)then
+                 frac_ref=unew(icell,ivar_refine)/unew(icell,1)
+              endif
+
+              ! update now
               unew(icell,1:5) = pvar(1:5)
               if(metal) unew(icell,imetal) = pvar(imetal)
               do ich=1,nchem
@@ -1114,6 +1175,9 @@ subroutine mech_fine_snIa_mpi(ilevel)
                  unew(icell,ndim+2+irad) = pvar(ndim+2+irad)
               end do
 #endif
+              if(ivar_refine>5)then
+                 unew(icell,ivar_refine)=unew(icell,1)*frac_ref
+              endif
 
            else
 #ifdef RT
@@ -1121,6 +1185,11 @@ subroutine mech_fine_snIa_mpi(ilevel)
                  xion(ii+1)=uold(icell,iIons+ii)/uold(icell,1)
               end do
 #endif
+              if(ivar_refine>5)then
+                 frac_ref=uold(icell,ivar_refine)/uold(icell,1)
+              endif
+
+              ! update now
               uold(icell,1:5) = pvar(1:5)
               if(metal) uold(icell,imetal) = pvar(imetal)
               do ich=1,nchem
@@ -1136,6 +1205,9 @@ subroutine mech_fine_snIa_mpi(ilevel)
                  uold(icell,ndim+2+irad) = pvar(ndim+2+irad)
               end do
 #endif
+              if(ivar_refine>5)then
+                 uold(icell,ivar_refine)=uold(icell,1)*frac_ref
+              endif
            endif
  
         endif ! if this belongs to me
