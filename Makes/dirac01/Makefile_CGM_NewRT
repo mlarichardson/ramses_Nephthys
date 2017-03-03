@@ -11,7 +11,7 @@ NIONS = 3
 NENER = 1
 NCHEM = 8
 SOLVER = hydro
-PATCH = ../../src/patch/rt/mark_nephthys_subcycle
+PATCH = ../../src/patch/rt/mark_nephthys_rt_subcycle
 EXEC = ramses
 ATON_FLAGS = #-DATON  # Uncomment to enable ATON.
 RT_FLAGS = -DRT -DNIONS=$(NIONS) -DNGROUPS=$(NGROUPS)
