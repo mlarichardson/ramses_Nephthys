@@ -274,7 +274,7 @@ if [[ $RT -eq 1 ]] ; then
   done
 fi
 
-echo "# Setup: buildRamses "${@} ./Makefile
+echo "# Setup: buildRamses "${@} > ./Makefile
 cat $MFILE >> ./Makefile
 make
 
