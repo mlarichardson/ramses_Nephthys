@@ -274,7 +274,8 @@ if [[ $RT -eq 1 ]] ; then
   done
 fi
 
-cp $MFILE ./Makefile
+echo "# Setup: buildRamses "${@} ./Makefile
+cat $MFILE >> ./Makefile
 make
 
 if [[ -e ./${EXEC}${NDIM}d ]] ; then
