@@ -380,6 +380,11 @@ subroutine stellar_winds_dump(ind_grid,ind_part,ind_grid_part,ng,np,ilevel)
      do j=1,np
         if(ok(j))then
            icd(j,idim)=id(j,idim)-2*igd(j,idim)
+        else
+           icd(j,idim)=id(j,idim)/3 ! 0 or 1
+           igrid(j) = ind_grid(ind_grid_part(j))
+           ok(j) = .true. ! moving to it's last known cell ... better than nothing. 
+           ! So never injecting into coarser level
         end if
      end do
   end do

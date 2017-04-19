@@ -100,7 +100,7 @@ subroutine set_unew(ilevel)
   end do
 
   do ivar=1,nvar
-    call make_virtual_reverse_dp(unew(1,ivar),ilevel)
+!    call make_virtual_reverse_dp(unew(1,ivar),ilevel)
     call make_virtual_fine_dp(unew(1,ivar),ilevel)
   enddo
 
