@@ -623,7 +623,7 @@ subroutine cmp_stellar_wind_props (birth_time,dteff, zstar,dfmloss, log_deloss_e
    ! For Chabrier IMF
    if(mass_loss_boost>1)then
       dfmloss = dfmloss * mass_loss_boost
-      dfmzloss = dfmloss * mass_loss_boost
+      dfmzloss = dfmzloss * mass_loss_boost
       do ich=1,nchem
          dfmloss_spec(ich) = dfmloss_spec(ich) * mass_loss_boost
       end do
