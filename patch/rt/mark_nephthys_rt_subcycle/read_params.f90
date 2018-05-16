@@ -28,7 +28,7 @@ subroutine read_params
        & ,nrestart,ncontrol,nstepmax,nsubcycle,nremap,ordering &
        & ,bisec_tol,static,geom,overload,cost_weighting,aton
   namelist/output_params/noutput,foutput,fbackup,aout,tout,output_mode &
-       & ,tend,delta_tout,aend,delta_aout,gadget_output
+       & ,tend,delta_tout,aend,delta_aout,gadget_output,write_onefile_time
   namelist/amr_params/levelmin,levelmax,ngridmax,ngridtot &
        & ,npartmax,nparttot,nexpand,boxlen
   namelist/poisson_params/epsilon,gravity_type,gravity_params &

@@ -256,6 +256,7 @@ module amr_parameters
   integer::IOGROUPSIZEREP=0        ! Subfolder size
   logical::withoutmkdir=.false.    !If true mkdir should be done before the run
   logical::print_when_io=.false.   !If true print when IO
+  logical::write_onefile_time=.false. !If true, only one proc writes at a time
   logical::synchro_when_io=.false. !If true synchronize when IO
 
   ! Stochastic feedback:
